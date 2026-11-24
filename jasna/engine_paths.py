@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from jasna._frozen import is_frozen
+from jasna.packaging.public_runtime import is_public_build
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,7 @@ def all_basicvsrpp_sub_engines_exist(model_weights_path: str, fp16: bool) -> boo
 
 
 def basicvsrpp_sub_engine_exists(path: str) -> bool:
-    if sys.platform == "linux" and is_frozen():
+    if sys.platform == "linux" and is_frozen() and not is_public_build():
         from jasna.protection.export_cache import available
         return available(path)
     return os.path.isfile(path)

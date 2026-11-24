@@ -76,6 +76,21 @@ dev = [
   "cmake",
   "ninja",
 ]
+public-build = [
+  "pyinstaller>=6.11,<7",
+]
+public-nvidia = [
+  # Match nvidia's shared pins. The optional VALI fork wheel is not published
+  # on PyPI; public builds use the existing PyAV decoder fallback instead.
+  "torch==2.12.1+cu130",
+  "torchvision==0.27.1+cu130",
+  "tensorrt==10.16.1.11",
+  "torch-tensorrt==2.12.0",
+  "nvidia-vfx==0.2.0.0",
+  "comfy-kitchen==0.2.38",
+  "scipy",
+  "triton-windows==3.7.1.post27; sys_platform == 'win32'",
+]
 
 [tool.setuptools]
 include-package-data = false

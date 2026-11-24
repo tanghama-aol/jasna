@@ -7,13 +7,6 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-from diffusers import (
-    AutoencoderKL,
-    DDPMScheduler,
-    DPMSolverMultistepScheduler,
-    UNet2DConditionModel,
-)
-from diffusers.models.attention_processor import AttnProcessor
 
 from jasna import accelerator
 from jasna._frozen import is_frozen
@@ -61,10 +54,15 @@ class Sd15InpaintRestorer:
         self.fp16 = bool(fp16)
         self._dtype = torch.float16 if self.fp16 else torch.float32
 
+        # Check availability before loading the optional diffusion stack or
+        # opening its configuration files in a public build.
+        ckpt = _read_checkpoint(self.model_dir)
+        from diffusers import AutoencoderKL, DDPMScheduler, DPMSolverMultistepScheduler, UNet2DConditionModel
+        from diffusers.models.attention_processor import AttnProcessor
+
         unet_config = json.loads((self.model_dir / "unet" / "config.json").read_text())
         unet = UNet2DConditionModel.from_config(unet_config)
 
-        ckpt = _read_checkpoint(self.model_dir)
         state_dict = ckpt.get("state_dict", ckpt)
         unet_state = {}
         for k, v in state_dict.items():

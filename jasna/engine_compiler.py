@@ -13,6 +13,7 @@ from jasna._frozen import is_frozen
 from jasna.engine_paths import all_basicvsrpp_sub_engines_exist
 from jasna.license_api import require_protection
 from jasna.os_utils import get_application_executable, subprocess_no_window_kwargs
+from jasna.packaging.public_runtime import compiler_environment, is_public_build
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +210,8 @@ def _run_compiler_subprocess(
     frozen = is_frozen()
     if frozen:
         cmd = [get_application_executable(), "--compile-engines", req.to_json()]
+    elif is_public_build():
+        cmd = [sys.executable, "-m", "jasna.packaging.public_entry", "--compile-engines", req.to_json()]
     else:
         cmd = [sys.executable, "-m", "jasna.engine_compiler", req.to_json()]
 
@@ -219,7 +222,9 @@ def _run_compiler_subprocess(
         "text": True,
         "bufsize": 1,
     }
-    if frozen:
+    if is_public_build():
+        kwargs["env"] = compiler_environment()
+    elif frozen:
         from jasna.protection.runtime import subprocess_environment
         kwargs["env"] = subprocess_environment()
     proc = subprocess.Popen(cmd, **kwargs, **subprocess_no_window_kwargs())

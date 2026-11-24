@@ -156,6 +156,50 @@ python -m jasna --input in.mp4 --output out.mp4    # CLI (see docs/en/cli.md)
 `JASNA_DECODE_BACKEND=vali|pyav-hw|pyav-sw` forces a decoder on the CLI (the GUI
 has **Video Decoder** in the Expert view); the default `auto` prefers VALI on NVIDIA.
 
+## Public Windows executable (NVIDIA)
+
+The public repository has its own free build entry,
+`jasna.packaging.public_entry`. It runs the GUI, CLI and BasicVSR++ without
+`jasna/protection`. Activation and supporter models remain unavailable; the
+official release entry still requires its private runtime. This build uses
+PyInstaller with Python source and bytecode retained for PyTorch inspection.
+
+In a 64-bit Python 3.12+ virtual environment, install:
+
+```powershell
+uv pip install -e ".[public-nvidia,public-build]" --extra-index-url https://download.pytorch.org/whl/cu130
+python -m jasna.packaging.public_entry --version
+.\scripts\build_public_windows.ps1 -VlcDir "C:\Program Files\VideoLAN\VLC"
+```
+
+FFmpeg and ffprobe must report major version 8 and be on `PATH`, or pass
+`-FfmpegDir "D:\tools\ffmpeg\bin"`. VLC must be 64-bit libVLC 3; use
+`-WithoutVlc` to omit player audio. `-CheckOnly` checks prerequisites first.
+The equivalent Python command is `python scripts/build_public_windows.py`;
+run it with `--help` for all options.
+
+`public-nvidia` keeps the NVIDIA runtime pins but omits the optional VALI fork
+wheel, which is not published on PyPI. The existing automatic decoder path
+uses PyAV when VALI is unavailable. If TensorRT's PyPI download stub stalls,
+add `--extra-index-url https://pypi.nvidia.com --index-strategy unsafe-best-match`
+to the install command to fetch its wheel directly from NVIDIA's index.
+
+The script writes a fresh `dist_windows_public/<timestamp>/jasna-free/`
+directory and checks CLI help, version, unavailable activation and compiler startup before
+reporting success. Distribute that entire directory, including `tools/`,
+`assets/`, GPU kernels, DLLs, license notices and `model_weights/`.
+`-ModelsDir model_weights` copies public detector and BasicVSR++ checkpoints;
+it omits encrypted models, license state and cached engines. Otherwise the
+model directory starts empty and the GUI's setup wizard downloads free models.
+`PUBLIC_BUILD.json` records the version and dependency versions for this build.
+
+GPU dependencies and build output are large. `-Python`, `-WorkDir` and
+`-OutputDir` can select an environment and build directories on another disk.
+Public builds use the regular Triton compiler instead of the official
+release's private build driver and prebuilt helpers; features that use
+`torch.compile` need the corresponding CUDA/C++ toolchain. Validate actual
+restoration on the target GPU in addition to the automated CLI checks.
+
 ## Tests
 
 ```bash

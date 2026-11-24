@@ -79,6 +79,31 @@ def test_source_build_keeps_config_scan(monkeypatch):
     assert _config_module.get_assignments_with_compile_ignored_comments is scan
 
 
+def test_public_frozen_build_keeps_the_regular_triton_compiler(monkeypatch, torch_config):
+    from torch._inductor import codecache
+    import torch._inductor.config as inductor_config
+    from torch.utils import _config_module
+    from triton import knobs
+    from jasna import _frozen
+    from jasna.packaging import public_runtime
+
+    regular_builder = knobs.build.impl
+    monkeypatch.setattr(public_runtime, "_public_build", True)
+    monkeypatch.setattr(_frozen, "_patched", False)
+    monkeypatch.setattr(_frozen, "is_frozen", lambda: True)
+    monkeypatch.setattr(_frozen, "register_ltx_sources", lambda root: pytest.fail("Public source is provided by the loader"))
+    monkeypatch.setattr(_frozen, "use_prebuilt_triton_modules", lambda directory: pytest.fail("Public builds have no private helpers"))
+    monkeypatch.setattr(sys, "meta_path", sys.meta_path.copy())
+    monkeypatch.setattr(_config_module, "get_assignments_with_compile_ignored_comments",
+                        _config_module.get_assignments_with_compile_ignored_comments)
+    monkeypatch.setattr(codecache, "torch_key", codecache.torch_key_cache(lambda: b"source"))
+    monkeypatch.setenv("TRITON_BACKENDS_IN_TREE", "1")
+    torch_config(inductor_config, compile_threads=inductor_config.compile_threads)
+    with patch.object(torch.jit, "interface"):
+        _frozen.patch_frozen_torch()
+    assert knobs.build.impl is regular_builder
+
+
 def test_importing_pipeline_does_not_patch_frozen_torch():
     orig = sys.modules.pop("jasna.pipeline", None)
     try:

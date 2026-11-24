@@ -7,12 +7,18 @@ logger = logging.getLogger(__name__)
 
 from jasna import startup_timing  # first: captures PROCESS_START near process start
 from jasna._frozen import is_frozen
+from jasna.packaging.public_runtime import is_public_build
 
 if __name__ == "__main__":
     os.environ.setdefault("OMP_WAIT_POLICY", "passive")
     os.environ.setdefault("CUDA_MODULE_LOADING", "LAZY")
 
-if __name__ == "__main__" and sys.platform in ("linux", "win32") and is_frozen():
+if is_public_build() and sys.argv[1:2] in (["--ltx-worker"], ["--tpm-activate"]):
+    from jasna.license_api import PROTECTION_REQUIRED_MESSAGE
+
+    raise SystemExit(PROTECTION_REQUIRED_MESSAGE)
+
+if __name__ == "__main__" and sys.platform in ("linux", "win32") and is_frozen() and not is_public_build():
     from jasna.protection import initialize_runtime
     try:
         initialize_runtime()

@@ -7,6 +7,7 @@ import warnings
 import torch
 
 from jasna._frozen import is_frozen
+from jasna.packaging.public_runtime import is_public_build
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ def get_workspace_size_bytes() -> int:
 def load_torchtrt_export(*, checkpoint_path: str, device: torch.device) -> torch.nn.Module:
     _mute_torch_tensorrt()
 
-    if sys.platform == "linux" and is_frozen():
+    if sys.platform == "linux" and is_frozen() and not is_public_build():
         from jasna.protection.export_cache import load
         return load(checkpoint_path, device).to(device)
 
@@ -117,7 +118,7 @@ def compile_and_save_torchtrt_dynamo(
         prev_level = fake_reg_logger.level
         fake_reg_logger.setLevel(logging.ERROR)
         try:
-            if sys.platform == "linux" and is_frozen():
+            if sys.platform == "linux" and is_frozen() and not is_public_build():
                 from jasna.protection.export_cache import save
                 save(trt_gm, output_path)
             elif has_dynamic:

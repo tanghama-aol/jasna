@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from importlib.util import find_spec
 
 from jasna._frozen import is_frozen
+from jasna.packaging.public_runtime import is_public_build
+
+PROTECTION_REQUIRED_MESSAGE = "Supporter models and activation require the official Jasna release."
 
 
 class ProtectionUnavailableError(RuntimeError):
@@ -23,7 +26,7 @@ class DriverLibraryMismatch:
 
 def ltx_driver_mismatch() -> DriverLibraryMismatch | None:
     """What stops LTX from starting on this Linux machine, found before any model download."""
-    if not (is_frozen() and sys.platform == "linux"):
+    if is_public_build() or not (is_frozen() and sys.platform == "linux"):
         return None
     from jasna.protection.ltx_worker_security import linux_driver_library_mismatch
 
@@ -31,6 +34,8 @@ def ltx_driver_mismatch() -> DriverLibraryMismatch | None:
 
 
 def protection_available() -> bool:
+    if is_public_build():
+        return False
     if is_frozen():
         return True
     spec = find_spec("jasna.protection")
@@ -40,7 +45,7 @@ def protection_available() -> bool:
 
 def require_protection() -> None:
     if not protection_available():
-        raise ProtectionUnavailableError("Supporter models and activation require the official Jasna release.")
+        raise ProtectionUnavailableError(PROTECTION_REQUIRED_MESSAGE)
 
 
 def typed_license_code(text: str) -> str:

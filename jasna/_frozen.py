@@ -11,11 +11,15 @@ the jasna binary) and keys its caches on the torch version (its source-tree hash
 walk the bundled torch). Triton finds its GPU backends by scanning its package (no pip
 metadata is shipped), and loads the C helper modules the build ships in
 ``triton_prebuilt/`` instead of compiling them with a C compiler users may not have.
+Public PyInstaller builds retain their package source and use Triton's regular
+compiler instead of the official release's prebuilt helper modules.
 """
 from __future__ import annotations
 
 import os
 import sys
+
+from jasna.packaging.public_runtime import is_public_build
 
 _patched = False
 
@@ -77,7 +81,7 @@ def patch_frozen_torch() -> None:
         from torch._inductor import codecache
         inductor_config.compile_threads = 1
         codecache.torch_key.set(hashlib.sha256(f"frozen torch {torch.__version__}".encode()).digest())
-        if has_triton():
+        if has_triton() and not is_public_build():
             from jasna.os_utils import get_application_executable
             root = Path(get_application_executable()).parent
             register_ltx_sources(root)

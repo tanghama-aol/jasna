@@ -355,6 +355,7 @@ def test_unet4x_engine_exists_encrypted(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_a_stale_encrypted_unet4x_engine_counts_as_missing(monkeypatch, tmp_path: Path) -> None:
+    pytest.importorskip("jasna.protection.protected_model")
     from jasna.protection import ProtectionError
 
     def stale(model_id, data):
@@ -445,6 +446,7 @@ def test_compiling_other_engines_keeps_the_unet4x_license_check_here(
 
 
 def test_an_offline_license_check_keeps_the_encrypted_unet4x_engine(monkeypatch, tmp_path: Path) -> None:
+    pytest.importorskip("jasna.protection.lease")
     from jasna.protection.lease import LeaseError
     from jasna.restorer import unet4x_secondary_restorer
 

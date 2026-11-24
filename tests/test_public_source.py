@@ -88,11 +88,12 @@ def test_public_encrypted_models_fail_before_opening_data(public_checkout):
     result = run_public(public_checkout, """
 from pathlib import Path
 from jasna.ltx.model_files import LtxModelFiles, open_tensors
-from jasna.restorer.sd15_inpaint_restorer import _read_checkpoint
+from jasna.restorer.sd15_inpaint_restorer import Sd15InpaintRestorer, _read_checkpoint
 from jasna.gui.ltx_models import license_missing, read_install_state
 operations = (lambda: open_tensors(Path('missing.enc')),
               lambda: LtxModelFiles.from_dir(Path('missing'), 'distilled', fast=False),
-              lambda: _read_checkpoint(Path('missing')))
+              lambda: _read_checkpoint(Path('missing')),
+              lambda: Sd15InpaintRestorer(Path('missing'), 'cpu', False))
 """ + _ASSERT_EVERY_OPERATION_NEEDS_PROTECTION + """
 assert license_missing(Path('missing'), 'distilled', False, 'auto', 'auto')
 assert not read_install_state(Path('missing'), 'auto', 'auto').downloadable
@@ -139,6 +140,30 @@ worker = start_license_info(lambda info, error: results.append((info, error)))
 worker.join(5)
 info, error = results[0]
 assert info is None and isinstance(error, ImportError), results
+""")
+    assert result.returncode == 0, result.stderr
+
+
+def test_explicit_public_frozen_build_keeps_the_gui_activation_disabled(public_checkout):
+    result = run_public(public_checkout, """
+sys.frozen = True
+from jasna.packaging.public_runtime import enable_public_build
+enable_public_build()
+from jasna.license_api import protection_available, require_protection, ProtectionUnavailableError
+from jasna.gui.activation_worker import start_license_info, refresh_pc_license
+assert not protection_available()
+results = []
+worker = start_license_info(lambda info, error: results.append((info, error)))
+worker.join(5)
+assert results == [((False, None), None)], results
+refresh_pc_license()
+try:
+    require_protection()
+except ProtectionUnavailableError:
+    pass
+else:
+    raise AssertionError('Public executable exposed supporter features')
+assert 'jasna.protection.lease' not in sys.modules
 """)
     assert result.returncode == 0, result.stderr
 

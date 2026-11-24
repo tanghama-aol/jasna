@@ -34,3 +34,11 @@ def test_amd_extra_pins_the_rocm_101_pytorch_builds() -> None:
 
     assert "torch==2.14.0+rocm10.1.0" in amd
     assert "torchvision==0.29.0a0+rocm10.1.0" in amd
+
+
+def test_public_nvidia_keeps_shared_pins_without_the_optional_vali_fork() -> None:
+    with (ROOT / "pyproject.toml").open("rb") as file:
+        extras = tomllib.load(file)["project"]["optional-dependencies"]
+
+    shared = {requirement for requirement in extras["nvidia"] if not requirement.startswith("python_vali==")}
+    assert set(extras["public-nvidia"]) == shared
